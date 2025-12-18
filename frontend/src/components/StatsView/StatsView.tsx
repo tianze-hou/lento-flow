@@ -86,13 +86,21 @@ export const StatsView: React.FC = () => {
         console.error('获取今日概览失败');
       }
       
-      // 暂时生成模拟分类数据，因为后端还没有实现分类统计API
-      setCategoryStats([
-        { name: '健康', value: 3 },
-        { name: '学习', value: 2 },
-        { name: '工作', value: 1 },
-        { name: '其他', value: 2 }
-      ]);
+      // 获取分类统计
+      const categoryResponse = await fetch('/api/stats/category', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (categoryResponse.ok) {
+        const categoryData = await categoryResponse.json();
+        setCategoryStats(categoryData);
+      } else {
+        console.error('获取分类统计失败');
+        // 如果获取失败，生成空的分类数据
+        setCategoryStats([]);
+      }
     } catch (error) {
       console.error('获取统计数据出错:', error);
     } finally {

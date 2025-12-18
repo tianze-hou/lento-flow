@@ -225,7 +225,7 @@ export const TodayView: React.FC = () => {
                 >
                   <TaskCard
                     task={task}
-                    onComplete={() => handleCompleteTask(task.id, !task.is_completed_today)}
+                    onComplete={() => handleCompleteTask(task.id, task.is_completed_today)}
                   />
                 </motion.div>
               ))
@@ -251,7 +251,7 @@ export const TodayView: React.FC = () => {
                 key={task.id}
                 task={task}
                 variant="compact"
-                onComplete={() => handleCompleteTask(task.id, !task.is_completed_today)}
+                onComplete={() => handleCompleteTask(task.id, task.is_completed_today)}
               />
             ))}
           </div>

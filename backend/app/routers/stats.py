@@ -5,7 +5,7 @@ from typing import List, Dict, Any
 
 from ..database import get_db
 from ..models import User, Task, Completion, DailyLog
-from ..schemas import DailyStats, WeeklyStats, MonthlyStats, HeatmapData, TaskStats
+from ..schemas import DailyStats, WeeklyStats, MonthlyStats, HeatmapData, TaskStats, CategoryStat
 from ..utils.auth import get_current_user
 from ..services.algorithm import LentoFlowAlgorithm, TaskState
 
@@ -256,6 +256,34 @@ def get_heatmap_data(
         "min_value": min_value,
         "max_value": max_value
     }
+
+# 分类统计
+@router.get("/category", response_model=List[CategoryStat])
+def get_category_stats(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """获取任务分类统计"""
+    # 查询用户所有任务
+    tasks = db.query(Task).filter(
+        Task.user_id == current_user.id
+    ).all()
+    
+    # 按分类分组统计
+    category_counts = {}
+    for task in tasks:
+        category = task.category or "未分类"
+        if category not in category_counts:
+            category_counts[category] = 0
+        category_counts[category] += 1
+    
+    # 转换为列表格式
+    result = [
+        {"name": category, "value": count}
+        for category, count in category_counts.items()
+    ]
+    
+    return result
 
 # 单任务统计
 @router.get("/task/{task_id}", response_model=TaskStats)

@@ -52,3 +52,8 @@ class TaskStats(BaseModel):
     completion_rate: float
     average_health: float
     last_completed: Optional[date] = None
+
+# 分类统计
+class CategoryStat(BaseModel):
+    name: str
+    value: int
