@@ -115,24 +115,27 @@ export const TodayView: React.FC = () => {
     fetchTodayData();
   }, []);
 
-  // 处理任务完成
-  const handleCompleteTask = async (taskId: number, completed: boolean) => {
+  // 处理任务完成/取消完成
+  const handleCompleteTask = async (taskId: number, isCompleted: boolean) => {
     try {
-      // 发送完成任务请求到后端
+      // 根据当前状态决定HTTP方法
+      const method = isCompleted ? 'DELETE' : 'POST';
       const response = await fetch(`/api/today/complete/${taskId}`, {
-        method: 'POST',
+        method: method,
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ completed })
+        // 只有POST请求需要body
+        body: method === 'POST' ? JSON.stringify({}) : undefined
       });
       
       if (response.ok) {
         // 重新获取最新数据
         fetchTodayData();
       } else {
-        console.error('更新任务状态失败');
+        const errorData = await response.json();
+        console.error('更新任务状态失败:', errorData.detail);
       }
     } catch (error) {
       console.error('更新任务状态出错:', error);

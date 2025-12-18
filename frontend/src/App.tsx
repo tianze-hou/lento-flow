@@ -44,7 +44,7 @@ const AppContent = () => {
       </header>
 
       {/* 主内容区 */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:ml-64">
         <Routes>
           {/* 保护路由 */}
           <Route element={<ProtectedRoute />}>

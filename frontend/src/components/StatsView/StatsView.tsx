@@ -53,27 +53,19 @@ export const StatsView: React.FC = () => {
       
       if (dailyResponse.ok) {
         const dailyData = await dailyResponse.json();
-        setDailyStats(dailyData);
+        // 转换后端数据格式以适配前端组件
+        const formattedDailyStats = dailyData.map((day: any) => ({
+          date: day.date,
+          tasks: day.tasks_completed,
+          energy: day.energy_spent
+        }));
+        setDailyStats(formattedDailyStats);
       } else {
         console.error('获取每日统计失败');
       }
       
-      // 获取分类统计
-      const categoryResponse = await fetch('/api/stats/category', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (categoryResponse.ok) {
-        const categoryData = await categoryResponse.json();
-        setCategoryStats(categoryData);
-      } else {
-        console.error('获取分类统计失败');
-      }
-      
-      // 获取今日概览
-      const todayResponse = await fetch('/api/stats/today', {
+      // 获取今日概览（从今日视图API获取，因为统计API没有专门的今日概览端点）
+      const todayResponse = await fetch('/api/today', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -81,10 +73,26 @@ export const StatsView: React.FC = () => {
       
       if (todayResponse.ok) {
         const todayData = await todayResponse.json();
-        setTodayOverview(todayData);
+        setTodayOverview({
+          completed_tasks: todayData.recommended_tasks.filter((task: any) => task.is_completed_today).length + 
+                         (todayData.other_tasks?.filter((task: any) => task.is_completed_today).length || 0),
+          total_tasks: todayData.recommended_tasks.length + (todayData.other_tasks?.length || 0),
+          energy_spent: todayData.energy_spent,
+          energy_budget: todayData.energy_budget,
+          task_health: todayData.overall_health.score,
+          daily_score: todayData.daily_score?.total_score || 0
+        });
       } else {
         console.error('获取今日概览失败');
       }
+      
+      // 暂时生成模拟分类数据，因为后端还没有实现分类统计API
+      setCategoryStats([
+        { name: '健康', value: 3 },
+        { name: '学习', value: 2 },
+        { name: '工作', value: 1 },
+        { name: '其他', value: 2 }
+      ]);
     } catch (error) {
       console.error('获取统计数据出错:', error);
     } finally {
