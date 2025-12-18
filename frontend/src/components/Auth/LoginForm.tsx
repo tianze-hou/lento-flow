@@ -39,7 +39,30 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onRegisterClick, onLoginSu
       });
 
       if (!response.ok) {
-        throw new Error('登录失败，请检查用户名和密码');
+        let errorMessage = '登录失败，请检查用户名和密码';
+        
+        try {
+          // 尝试解析JSON响应
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.detail || errorMessage;
+          } else {
+            // 如果不是JSON，获取文本响应
+            const errorText = await response.text();
+            // 检查是否是内部服务器错误
+            if (response.status === 500) {
+              errorMessage = '服务器内部错误，请稍后重试';
+            } else {
+              errorMessage = `请求失败 (${response.status}): ${errorText.substring(0, 100)}...`;
+            }
+          }
+        } catch (parseError) {
+          // 解析失败时使用默认错误信息
+          errorMessage = `请求失败 (${response.status}): ${response.statusText}`;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();

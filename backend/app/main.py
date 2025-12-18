@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routers import auth_router, tasks_router, today_router, stats_router
 from .database import engine, Base
 
+# 导入所有模型，确保它们被注册到Base元数据中
+from . import models
+
 # 创建数据库表
 Base.metadata.create_all(bind=engine)
 
