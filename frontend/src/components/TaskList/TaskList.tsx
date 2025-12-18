@@ -202,8 +202,13 @@ export const TaskList: React.FC = () => {
 
       {/* 任务列表 */}
       <AnimatePresence>
-        <div className="space-y-3">
-          {filteredTasks.map((task, index) => (
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="text-primary text-lg font-medium">加载中...</div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredTasks.map((task, index) => (
             <motion.div
               key={task.id}
               initial={{ opacity: 0, y: 20 }}
@@ -267,17 +272,18 @@ export const TaskList: React.FC = () => {
               </div>
             </motion.div>
           ))}
-        </div>
-      </AnimatePresence>
-
-      {/* 空状态 */}
-      {filteredTasks.length === 0 && (
-        <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
-          <span className="text-4xl block mb-2">📋</span>
-          <h3 className="font-medium text-gray-800 mb-1">暂无任务</h3>
-          <p className="text-gray-500 text-sm">点击上方的"添加任务"按钮开始创建你的第一个习惯吧！</p>
+          
+          {/* 空状态 */}
+          {filteredTasks.length === 0 && (
+            <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
+              <span className="text-4xl block mb-2">📋</span>
+              <h3 className="font-medium text-gray-800 mb-1">暂无任务</h3>
+              <p className="text-gray-500 text-sm">点击上方的"添加任务"按钮开始创建你的第一个习惯吧！</p>
+            </div>
+          )}
         </div>
       )}
+      </AnimatePresence>
 
       {/* 添加任务模态框 */}
       <AnimatePresence>
