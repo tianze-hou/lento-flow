@@ -9,7 +9,7 @@ class TaskCreate(BaseModel):
     energy_cost: int = Field(2, ge=1, le=5)
     expected_interval: int = Field(2, ge=1, le=30)
     importance: int = Field(3, ge=1, le=5)
-    category: Optional[str] = None
+    category_id: Optional[int] = None
     color: Optional[str] = Field('#6366f1', pattern='^#[0-9a-fA-F]{6}$')
     icon: Optional[str] = 'star'
 
@@ -20,7 +20,7 @@ class TaskUpdate(BaseModel):
     energy_cost: Optional[int] = Field(None, ge=1, le=5)
     expected_interval: Optional[int] = Field(None, ge=1, le=30)
     importance: Optional[int] = Field(None, ge=1, le=5)
-    category: Optional[str] = None
+    category_id: Optional[int] = None
     color: Optional[str] = Field(None, pattern='^#[0-9a-fA-F]{6}$')
     icon: Optional[str] = None
     is_active: Optional[bool] = None
@@ -33,7 +33,9 @@ class TaskResponse(BaseModel):
     energy_cost: int
     expected_interval: int
     importance: int
-    category: Optional[str] = None
+    category_id: Optional[int] = None
+    category_name: Optional[str] = None
+    category_color: Optional[str] = None
     color: str
     icon: str
     is_active: bool

@@ -29,6 +29,7 @@ app.include_router(auth_router)
 app.include_router(tasks_router)
 app.include_router(today_router)
 app.include_router(stats_router)
+app.include_router(categories_router)
 
 # 根路径
 @app.get("/")

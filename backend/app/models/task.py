@@ -13,7 +13,7 @@ class Task(Base):
     energy_cost = Column(Integer, default=2)  # 1-5
     expected_interval = Column(Integer, default=2)  # 期望多少天做一次
     importance = Column(Integer, default=3)  # 1-5
-    category = Column(String(50))
+    category_id = Column(Integer, ForeignKey('categories.id'), nullable=True, index=True)
     color = Column(String(7), default='#6366f1')  # 十六进制颜色
     icon = Column(String(50), default='star')
     is_active = Column(Boolean, default=True)
@@ -22,6 +22,7 @@ class Task(Base):
     
     # 关系
     user = relationship("User", back_populates="tasks")
+    category = relationship("Category", back_populates="tasks")
     completions = relationship("Completion", back_populates="task", cascade="all, delete-orphan")
     
     @property

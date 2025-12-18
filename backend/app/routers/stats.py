@@ -264,24 +264,36 @@ def get_category_stats(
     db: Session = Depends(get_db)
 ):
     """获取任务分类统计"""
-    # 查询用户所有任务
-    tasks = db.query(Task).filter(
-        Task.user_id == current_user.id
+    # 查询用户所有类别
+    categories = db.query(Category).filter(
+        Category.user_id == current_user.id
     ).all()
     
-    # 按分类分组统计
-    category_counts = {}
-    for task in tasks:
-        category = task.category or "未分类"
-        if category not in category_counts:
-            category_counts[category] = 0
-        category_counts[category] += 1
+    # 查询每个类别的任务数量
+    result = []
+    for category in categories:
+        task_count = db.query(Task).filter(
+            Task.user_id == current_user.id,
+            Task.category_id == category.id
+        ).count()
+        
+        if task_count > 0:
+            result.append({
+                "name": category.name,
+                "value": task_count
+            })
     
-    # 转换为列表格式
-    result = [
-        {"name": category, "value": count}
-        for category, count in category_counts.items()
-    ]
+    # 统计未分类的任务
+    uncategorized_count = db.query(Task).filter(
+        Task.user_id == current_user.id,
+        Task.category_id.is_(None)
+    ).count()
+    
+    if uncategorized_count > 0:
+        result.append({
+            "name": "未分类",
+            "value": uncategorized_count
+        })
     
     return result
 

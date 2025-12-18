@@ -23,7 +23,7 @@ interface NewTaskFormData {
   energy_cost: number;
   expected_interval: number;
   importance: number;
-  category: string;
+  category_id: number;
   icon: string;
   color: string;
 }
@@ -33,15 +33,28 @@ export const TaskList: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [filter, setFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [newTaskForm, setNewTaskForm] = useState<NewTaskFormData>({
     name: '',
     energy_cost: 2,
     expected_interval: 2,
     importance: 3,
-    category: '其他',
+    category_id: 0,
     icon: 'star',
     color: '#6366f1'
   });
+
+  // 类别数据类型
+  interface Category {
+    id: number;
+    name: string;
+    color: string;
+    order: number;
+    is_active: boolean;
+    user_id: number;
+    created_at: string;
+    updated_at: string;
+  };
 
   // 从后端获取任务列表
   const fetchTasks = async () => {
@@ -66,9 +79,30 @@ export const TaskList: React.FC = () => {
     }
   };
 
-  // 初始加载任务
+  // 从后端获取类别列表
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const categoriesData = await response.json();
+        setCategories(categoriesData);
+      } else {
+        console.error('获取类别列表失败');
+      }
+    } catch (error) {
+      console.error('获取类别列表出错:', error);
+    }
+  };
+
+  // 初始加载任务和类别
   useEffect(() => {
     fetchTasks();
+    fetchCategories();
   }, []);
 
   // 过滤任务
@@ -143,13 +177,19 @@ export const TaskList: React.FC = () => {
     if (!newTaskForm.name.trim()) return;
     
     try {
+      // 处理category_id，0表示无类别
+      const taskData = {
+        ...newTaskForm,
+        category_id: newTaskForm.category_id === 0 ? null : newTaskForm.category_id
+      };
+      
       const response = await fetch('/api/tasks', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(newTaskForm)
+        body: JSON.stringify(taskData)
       });
       
       if (response.ok) {
@@ -162,7 +202,7 @@ export const TaskList: React.FC = () => {
           energy_cost: 2,
           expected_interval: 2,
           importance: 3,
-          category: '其他',
+          category_id: 0,
           icon: 'star',
           color: '#6366f1'
         });
@@ -355,17 +395,17 @@ export const TaskList: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">任务类别</label>
                   <select 
-                    name="category"
-                    value={newTaskForm.category}
+                    name="category_id"
+                    value={newTaskForm.category_id}
                     onChange={handleFormChange}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   >
-                    <option value="其他">其他</option>
-                    <option value="健康">健康</option>
-                    <option value="学习">学习</option>
-                    <option value="工作">工作</option>
-                    <option value="生活">生活</option>
-                    <option value="社交">社交</option>
+                    <option value={0}>无类别</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

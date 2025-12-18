@@ -20,3 +20,4 @@ class User(Base):
     # 关系
     tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")
     daily_logs = relationship("DailyLog", back_populates="user", cascade="all, delete-orphan")
+    categories = relationship("Category", back_populates="user", cascade="all, delete-orphan")
