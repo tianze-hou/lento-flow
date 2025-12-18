@@ -7,8 +7,8 @@ export const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
 
   const handleLoginSuccess = () => {
-    // 登录成功后刷新页面，触发 App.tsx 中的认证检查
-    window.location.reload();
+    // 登录成功后导航到主页，然后刷新页面确保状态同步
+    window.location.href = '/';
   };
 
   return (
