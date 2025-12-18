@@ -1,0 +1,143 @@
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Eye, EyeOff } from 'lucide-react';
+
+interface LoginFormProps {
+  onRegisterClick: () => void;
+  onLoginSuccess: () => void;
+}
+
+export const LoginForm: React.FC<LoginFormProps> = ({ onRegisterClick, onLoginSuccess }) => {
+  const [formData, setFormData] = useState({
+    username: '',
+    password: ''
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          username: formData.username,
+          password: formData.password
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('登录失败，请检查用户名和密码');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('token', data.access_token);
+      onLoginSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '登录失败，请稍后重试');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-md mx-auto w-full space-y-6"
+    >
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">欢迎回到 LentoFlow</h1>
+        <p className="text-sm text-gray-600">弹性习惯追踪，让好习惯轻松养成</p>
+      </div>
+
+      <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
+        <div>
+          <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+            用户名
+          </label>
+          <input
+            id="username"
+            name="username"
+            type="text"
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            placeholder="请输入用户名"
+            value={formData.username}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            密码
+          </label>
+          <div className="relative">
+            <input
+              id="password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="请输入密码"
+              value={formData.password}
+              onChange={handleChange}
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              '登录'
+            )}
+          </button>
+        </div>
+      </form>
+
+      <div className="text-center">
+        <p className="text-sm text-gray-600">
+          还没有账号？
+          <button
+            type="button"
+            className="font-medium text-primary hover:text-primary/80 ml-1"
+            onClick={onRegisterClick}
+          >
+            注册新账号
+          </button>
+        </p>
+      </div>
+    </motion.div>
+  );
+};
