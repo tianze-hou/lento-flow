@@ -1,30 +1,101 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, Calendar, PieChart, TrendingUp } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 
-// 模拟统计数据
-const mockDailyStats = [
-  { date: '12/12', tasks: 2, energy: 4 },
-  { date: '12/13', tasks: 3, energy: 7 },
-  { date: '12/14', tasks: 1, energy: 2 },
-  { date: '12/15', tasks: 4, energy: 9 },
-  { date: '12/16', tasks: 2, energy: 5 },
-  { date: '12/17', tasks: 3, energy: 6 },
-  { date: '12/18', tasks: 2, energy: 4 }
-];
+// 统计数据类型定义
+interface DailyStat {
+  date: string;
+  tasks: number;
+  energy: number;
+}
 
-const mockCategoryStats = [
-  { name: '学习', value: 8 },
-  { name: '健康', value: 5 },
-  { name: '工作', value: 3 },
-  { name: '其他', value: 2 }
-];
+interface CategoryStat {
+  name: string;
+  value: number;
+}
+
+interface TodayOverview {
+  completed_tasks: number;
+  total_tasks: number;
+  energy_spent: number;
+  energy_budget: number;
+  task_health: number;
+  daily_score: number;
+}
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
 
 export const StatsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState('daily');
+  const [dailyStats, setDailyStats] = useState<DailyStat[]>([]);
+  const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([]);
+  const [todayOverview, setTodayOverview] = useState<TodayOverview>({
+    completed_tasks: 0,
+    total_tasks: 0,
+    energy_spent: 0,
+    energy_budget: 15,
+    task_health: 100,
+    daily_score: 0
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 从后端获取统计数据
+  const fetchStats = async () => {
+    setIsLoading(true);
+    try {
+      // 获取每日统计
+      const dailyResponse = await fetch('/api/stats/daily', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (dailyResponse.ok) {
+        const dailyData = await dailyResponse.json();
+        setDailyStats(dailyData);
+      } else {
+        console.error('获取每日统计失败');
+      }
+      
+      // 获取分类统计
+      const categoryResponse = await fetch('/api/stats/category', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (categoryResponse.ok) {
+        const categoryData = await categoryResponse.json();
+        setCategoryStats(categoryData);
+      } else {
+        console.error('获取分类统计失败');
+      }
+      
+      // 获取今日概览
+      const todayResponse = await fetch('/api/stats/today', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (todayResponse.ok) {
+        const todayData = await todayResponse.json();
+        setTodayOverview(todayData);
+      } else {
+        console.error('获取今日概览失败');
+      }
+    } catch (error) {
+      console.error('获取统计数据出错:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 初始加载数据
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -74,28 +145,34 @@ export const StatsView: React.FC = () => {
             <Calendar size={18} className="mr-2" />
             今日概览
           </h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-500 mb-1">完成任务</p>
-              <p className="text-2xl font-bold text-primary">2/5</p>
-              <p className="text-xs text-green-500 mt-1">+1 与昨日相比</p>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-500 mb-1">消耗能量</p>
-              <p className="text-2xl font-bold text-primary">6/15</p>
-              <p className="text-xs text-yellow-500 mt-1">+2 与昨日相比</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-500 mb-1">完成任务</p>
+                <p className="text-2xl font-bold text-primary">{todayOverview.completed_tasks}/{todayOverview.total_tasks}</p>
+                <p className="text-xs text-green-500 mt-1">+0 与昨日相比</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-500 mb-1">消耗能量</p>
+                <p className="text-2xl font-bold text-primary">{todayOverview.energy_spent}/{todayOverview.energy_budget}</p>
+                <p className="text-xs text-yellow-500 mt-1">+0 与昨日相比</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-500 mb-1">任务健康度</p>
+                <p className="text-2xl font-bold text-primary">{todayOverview.task_health}%</p>
+                <p className="text-xs text-green-500 mt-1">+0% 与昨日相比</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-500 mb-1">今日得分</p>
+                <p className="text-2xl font-bold text-primary">{todayOverview.daily_score.toFixed(1)}</p>
+                <p className="text-xs text-orange-500 mt-1">+0.0 与昨日相比</p>
+              </div>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-500 mb-1">任务健康度</p>
-              <p className="text-2xl font-bold text-primary">72%</p>
-              <p className="text-xs text-green-500 mt-1">+3% 与昨日相比</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-500 mb-1">今日得分</p>
-              <p className="text-2xl font-bold text-primary">45.4</p>
-              <p className="text-xs text-orange-500 mt-1">-5.2 与昨日相比</p>
-            </div>
-          </div>
+          )}
         </motion.div>
 
         {/* 分类统计卡片 */}
@@ -110,25 +187,36 @@ export const StatsView: React.FC = () => {
             任务分类
           </h2>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <RechartsPieChart>
-                <Pie
-                  data={mockCategoryStats}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {mockCategoryStats.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </RechartsPieChart>
-            </ResponsiveContainer>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-full">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : categoryStats.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsPieChart>
+                  <Pie
+                    data={categoryStats}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {categoryStats.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </RechartsPieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                <PieChart size={48} className="mb-2 opacity-50" />
+                <p>暂无分类数据</p>
+              </div>
+            )}
           </div>
         </motion.div>
 
@@ -144,16 +232,27 @@ export const StatsView: React.FC = () => {
             最近7天统计
           </h2>
           <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={mockDailyStats}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="tasks" stroke="#3b82f6" strokeWidth={2} name="完成任务数" />
-                <Line type="monotone" dataKey="energy" stroke="#10b981" strokeWidth={2} name="消耗能量" />
-              </LineChart>
-            </ResponsiveContainer>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-full">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : dailyStats.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={dailyStats}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="tasks" stroke="#3b82f6" strokeWidth={2} name="完成任务数" />
+                  <Line type="monotone" dataKey="energy" stroke="#10b981" strokeWidth={2} name="消耗能量" />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                <BarChart3 size={48} className="mb-2 opacity-50" />
+                <p>暂无每日统计数据</p>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>

@@ -4,103 +4,47 @@ import { TaskCard } from '../TaskCard/TaskCard';
 import { HealthBar } from '../HealthBar/HealthBar';
 import { EnergyMeter } from '../EnergyMeter/EnergyMeter';
 
-// 模拟 API 数据
-const mockTodayData = {
-  date: '2025-12-18',
-  energy_budget: 15,
-  energy_spent: 6,
-  energy_remaining: 9,
-  recommended_tasks: [
-    {
-      id: 1,
-      name: '练习吉他',
-      energy_cost: 3,
-      urgency: 1.8,
-      urgency_level: 'normal',
-      health: 65,
-      last_done: '2025-12-15',
-      days_since: 3,
-      expected_interval: 2,
-      is_completed_today: false,
-      icon: 'guitar',
-      color: '#f59e0b'
-    },
-    {
-      id: 2,
-      name: '日语学习',
-      energy_cost: 2,
-      urgency: 2.3,
-      urgency_level: 'high',
-      health: 42,
-      last_done: '2025-12-13',
-      days_since: 5,
-      expected_interval: 2,
-      is_completed_today: false,
-      icon: 'book',
-      color: '#ef4444'
-    },
-    {
-      id: 3,
-      name: '阅读',
-      energy_cost: 2,
-      urgency: 1.5,
-      urgency_level: 'normal',
-      health: 75,
-      last_done: '2025-12-17',
-      days_since: 1,
-      expected_interval: 1,
-      is_completed_today: true,
-      icon: 'book-open',
-      color: '#10b981'
-    }
-  ],
-  other_tasks: [
-    {
-      id: 4,
-      name: '运动',
-      energy_cost: 4,
-      urgency: 1.2,
-      urgency_level: 'normal',
-      health: 85,
-      last_done: '2025-12-16',
-      days_since: 2,
-      expected_interval: 3,
-      is_completed_today: false,
-      icon: 'dumbbell',
-      color: '#3b82f6'
-    },
-    {
-      id: 5,
-      name: '冥想',
-      energy_cost: 1,
-      urgency: 0.8,
-      urgency_level: 'low',
-      health: 90,
-      last_done: '2025-12-17',
-      days_since: 1,
-      expected_interval: 1,
-      is_completed_today: true,
-      icon: 'brain',
-      color: '#8b5cf6'
-    }
-  ],
+// 任务类型定义
+interface Task {
+  id: number;
+  name: string;
+  energy_cost: number;
+  urgency: number;
+  urgency_level: 'low' | 'normal' | 'high';
+  health: number;
+  last_done: string;
+  days_since: number;
+  expected_interval: number;
+  is_completed_today: boolean;
+  icon: string;
+  color: string;
+}
+
+// 今日数据类型定义
+interface TodayData {
+  date: string;
+  energy_budget: number;
+  energy_spent: number;
+  energy_remaining: number;
+  recommended_tasks: Task[];
+  other_tasks: Task[];
   overall_health: {
-    score: 72,
-    status: 'healthy',
-    icon: '🌿',
-    message: '整体状态良好'
-  },
+    score: number;
+    status: string;
+    icon: string;
+    message: string;
+  };
   daily_score: {
-    base_score: 40,
-    urgent_bonus: 5.4,
-    total_score: 45.4,
-    grade: 'okay',
-    message: '不错的一天！ 👍',
-    energy_spent: 6,
-    tasks_completed: 2
-  },
-  motivational_message: '今天状态不错！先完成日语学习吧，它已经等你5天了 📚'
-};
+    base_score: number;
+    urgent_bonus: number;
+    total_score: number;
+    grade: string;
+    message: string;
+    energy_spent: number;
+    tasks_completed: number;
+  };
+  motivational_message: string;
+}
 
 // 格式化日期
 const formatDate = (dateString: string) => {
@@ -113,48 +57,86 @@ const formatDate = (dateString: string) => {
   });
 };
 
+// 初始空数据
+const initialEmptyData: TodayData = {
+  date: new Date().toISOString().split('T')[0],
+  energy_budget: 15,
+  energy_spent: 0,
+  energy_remaining: 15,
+  recommended_tasks: [],
+  other_tasks: [],
+  overall_health: {
+    score: 100,
+    status: 'healthy',
+    icon: '�',
+    message: '开始你的习惯之旅吧！'
+  },
+  daily_score: {
+    base_score: 0,
+    urgent_bonus: 0,
+    total_score: 0,
+    grade: 'new',
+    message: '今天是全新的一天！ �',
+    energy_spent: 0,
+    tasks_completed: 0
+  },
+  motivational_message: '欢迎来到 LentoFlow！开始创建你的第一个习惯吧 💪'
+};
+
 export const TodayView: React.FC = () => {
-  const [data, setData] = useState(mockTodayData);
+  const [data, setData] = useState<TodayData>(initialEmptyData);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 模拟 API 调用
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      // 模拟网络请求延迟
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setData(mockTodayData);
+  // 从后端获取今日数据
+  const fetchTodayData = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/today', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const todayData = await response.json();
+        setData(todayData);
+      } else {
+        console.error('获取今日数据失败');
+      }
+    } catch (error) {
+      console.error('获取今日数据出错:', error);
+    } finally {
       setIsLoading(false);
-    };
+    }
+  };
 
-    fetchData();
+  // 初始加载数据
+  useEffect(() => {
+    fetchTodayData();
   }, []);
 
   // 处理任务完成
-  const handleCompleteTask = (taskId: number) => {
-    setData(prev => {
-      // 更新推荐任务
-      const updatedRecommended = prev.recommended_tasks.map(task => {
-        if (task.id === taskId) {
-          return { ...task, is_completed_today: !task.is_completed_today };
-        }
-        return task;
+  const handleCompleteTask = async (taskId: number, completed: boolean) => {
+    try {
+      // 发送完成任务请求到后端
+      const response = await fetch(`/api/today/complete/${taskId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ completed })
       });
-
-      // 更新其他任务
-      const updatedOthers = prev.other_tasks.map(task => {
-        if (task.id === taskId) {
-          return { ...task, is_completed_today: !task.is_completed_today };
-        }
-        return task;
-      });
-
-      return {
-        ...prev,
-        recommended_tasks: updatedRecommended,
-        other_tasks: updatedOthers
-      };
-    });
+      
+      if (response.ok) {
+        // 重新获取最新数据
+        fetchTodayData();
+      } else {
+        console.error('更新任务状态失败');
+      }
+    } catch (error) {
+      console.error('更新任务状态出错:', error);
+    }
   };
 
   if (isLoading) {
@@ -230,19 +212,25 @@ export const TodayView: React.FC = () => {
         
         <AnimatePresence>
           <div className="space-y-3">
-            {recommended_tasks.map((task, index) => (
-              <motion.div
-                key={task.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <TaskCard
-                  task={task}
-                  onComplete={() => handleCompleteTask(task.id)}
-                />
-              </motion.div>
-            ))}
+            {recommended_tasks.length > 0 ? (
+              recommended_tasks.map((task, index) => (
+                <motion.div
+                  key={task.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <TaskCard
+                    task={task}
+                    onComplete={() => handleCompleteTask(task.id, !task.is_completed_today)}
+                  />
+                </motion.div>
+              ))
+            ) : (
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center text-gray-500">
+                暂无推荐任务，去创建你的第一个任务吧！
+              </div>
+            )}
           </div>
         </AnimatePresence>
       </section>
@@ -260,7 +248,7 @@ export const TodayView: React.FC = () => {
                 key={task.id}
                 task={task}
                 variant="compact"
-                onComplete={() => handleCompleteTask(task.id)}
+                onComplete={() => handleCompleteTask(task.id, !task.is_completed_today)}
               />
             ))}
           </div>

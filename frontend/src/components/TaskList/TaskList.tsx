@@ -1,80 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Filter, Edit, Trash, Check } from 'lucide-react';
 
-// 模拟任务数据
-const mockTasks = [
-  {
-    id: 1,
-    name: '练习吉他',
-    energy_cost: 3,
-    expected_interval: 2,
-    importance: 4,
-    category: '学习',
-    color: '#f59e0b',
-    icon: 'guitar',
-    is_active: true,
-    last_done_date: '2025-12-15',
-    health: 65
-  },
-  {
-    id: 2,
-    name: '日语学习',
-    energy_cost: 2,
-    expected_interval: 2,
-    importance: 5,
-    category: '学习',
-    color: '#ef4444',
-    icon: 'book',
-    is_active: true,
-    last_done_date: '2025-12-13',
-    health: 42
-  },
-  {
-    id: 3,
-    name: '阅读',
-    energy_cost: 2,
-    expected_interval: 1,
-    importance: 3,
-    category: '学习',
-    color: '#10b981',
-    icon: 'book-open',
-    is_active: true,
-    last_done_date: '2025-12-17',
-    health: 75
-  },
-  {
-    id: 4,
-    name: '运动',
-    energy_cost: 4,
-    expected_interval: 3,
-    importance: 4,
-    category: '健康',
-    color: '#3b82f6',
-    icon: 'dumbbell',
-    is_active: true,
-    last_done_date: '2025-12-16',
-    health: 85
-  },
-  {
-    id: 5,
-    name: '冥想',
-    energy_cost: 1,
-    expected_interval: 1,
-    importance: 2,
-    category: '健康',
-    color: '#8b5cf6',
-    icon: 'brain',
-    is_active: true,
-    last_done_date: '2025-12-17',
-    health: 90
-  }
-];
+// 任务类型定义
+interface Task {
+  id: number;
+  name: string;
+  energy_cost: number;
+  expected_interval: number;
+  importance: number;
+  category: string;
+  color: string;
+  icon: string;
+  is_active: boolean;
+  last_done_date: string;
+  health: number;
+}
+
+// 新建任务表单数据类型
+interface NewTaskFormData {
+  name: string;
+  energy_cost: number;
+  expected_interval: number;
+  importance: number;
+  category: string;
+  icon: string;
+  color: string;
+}
 
 export const TaskList: React.FC = () => {
-  const [tasks, setTasks] = useState(mockTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [isLoading, setIsLoading] = useState(false);
+  const [newTaskForm, setNewTaskForm] = useState<NewTaskFormData>({
+    name: '',
+    energy_cost: 2,
+    expected_interval: 2,
+    importance: 3,
+    category: '其他',
+    icon: 'star',
+    color: '#6366f1'
+  });
+
+  // 从后端获取任务列表
+  const fetchTasks = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/tasks', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const tasksData = await response.json();
+        setTasks(tasksData);
+      } else {
+        console.error('获取任务列表失败');
+      }
+    } catch (error) {
+      console.error('获取任务列表出错:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 初始加载任务
+  useEffect(() => {
+    fetchTasks();
+  }, []);
 
   // 过滤任务
   const filteredTasks = tasks.filter(task => {
@@ -84,37 +79,99 @@ export const TaskList: React.FC = () => {
   });
 
   // 切换任务状态
-  const toggleTaskActive = (taskId: number) => {
-    setTasks(prev => prev.map(task => {
-      if (task.id === taskId) {
-        return { ...task, is_active: !task.is_active };
+  const toggleTaskActive = async (taskId: number) => {
+    try {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          is_active: !task.is_active
+        })
+      });
+      
+      if (response.ok) {
+        // 更新本地状态
+        setTasks(prev => prev.map(t => 
+          t.id === taskId ? { ...t, is_active: !t.is_active } : t
+        ));
+      } else {
+        console.error('更新任务状态失败');
       }
-      return task;
-    }));
+    } catch (error) {
+      console.error('更新任务状态出错:', error);
+    }
   };
 
   // 删除任务
-  const deleteTask = (taskId: number) => {
-    setTasks(prev => prev.filter(task => task.id !== taskId));
+  const deleteTask = async (taskId: number) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        // 更新本地状态
+        setTasks(prev => prev.filter(t => t.id !== taskId));
+      } else {
+        console.error('删除任务失败');
+      }
+    } catch (error) {
+      console.error('删除任务出错:', error);
+    }
   };
 
-  // 添加任务（模拟）
-  const addTask = () => {
-    const newTask = {
-      id: tasks.length + 1,
-      name: '新任务',
-      energy_cost: 2,
-      expected_interval: 2,
-      importance: 3,
-      category: '其他',
-      color: '#6366f1',
-      icon: 'star',
-      is_active: true,
-      last_done_date: new Date().toISOString().split('T')[0], // 使用当前日期作为字符串
-      health: 100
-    };
-    setTasks(prev => [...prev, newTask]);
-    setIsAddModalOpen(false);
+  // 处理表单输入变化
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type } = e.target;
+    setNewTaskForm(prev => ({
+      ...prev,
+      [name]: type === 'number' ? parseInt(value) : value
+    }));
+  };
+
+  // 添加任务
+  const addTask = async () => {
+    if (!newTaskForm.name.trim()) return;
+    
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newTaskForm)
+      });
+      
+      if (response.ok) {
+        const newTask = await response.json();
+        setTasks(prev => [...prev, newTask]);
+        setIsAddModalOpen(false);
+        // 重置表单
+        setNewTaskForm({
+          name: '',
+          energy_cost: 2,
+          expected_interval: 2,
+          importance: 3,
+          category: '其他',
+          icon: 'star',
+          color: '#6366f1'
+        });
+      } else {
+        console.error('添加任务失败');
+      }
+    } catch (error) {
+      console.error('添加任务出错:', error);
+    }
   };
 
   return (
@@ -244,6 +301,9 @@ export const TaskList: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">任务名称</label>
                   <input 
                     type="text" 
+                    name="name"
+                    value={newTaskForm.name}
+                    onChange={handleFormChange}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="输入任务名称"
                   />
@@ -253,9 +313,11 @@ export const TaskList: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">能量消耗 (1-5)</label>
                     <input 
                       type="number" 
+                      name="energy_cost"
+                      value={newTaskForm.energy_cost}
+                      onChange={handleFormChange}
                       min="1" 
-                      max="5" 
-                      defaultValue="2"
+                      max="5"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     />
                   </div>
@@ -263,9 +325,11 @@ export const TaskList: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">期望间隔 (天)</label>
                     <input 
                       type="number" 
+                      name="expected_interval"
+                      value={newTaskForm.expected_interval}
+                      onChange={handleFormChange}
                       min="1" 
-                      max="30" 
-                      defaultValue="2"
+                      max="30"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     />
                   </div>
@@ -274,9 +338,11 @@ export const TaskList: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">重要性 (1-5)</label>
                   <input 
                     type="number" 
+                    name="importance"
+                    value={newTaskForm.importance}
+                    onChange={handleFormChange}
                     min="1" 
-                    max="5" 
-                    defaultValue="3"
+                    max="5"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                 </div>
