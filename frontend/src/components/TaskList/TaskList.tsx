@@ -130,7 +130,7 @@ export const TaskList: React.FC = () => {
   };
 
   // 处理表单输入变化
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     setNewTaskForm(prev => ({
       ...prev,
@@ -351,6 +351,22 @@ export const TaskList: React.FC = () => {
                     max="5"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">任务类别</label>
+                  <select 
+                    name="category"
+                    value={newTaskForm.category}
+                    onChange={handleFormChange}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  >
+                    <option value="其他">其他</option>
+                    <option value="健康">健康</option>
+                    <option value="学习">学习</option>
+                    <option value="工作">工作</option>
+                    <option value="生活">生活</option>
+                    <option value="社交">社交</option>
+                  </select>
                 </div>
               </div>
               {/* 模态框按钮 */}
