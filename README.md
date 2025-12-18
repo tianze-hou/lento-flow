@@ -163,7 +163,7 @@ http://localhost:8000/docs
 ```bash
 # 克隆代码
 cd /opt
-git clone <仓库地址>
+git clone https://github.com/tianze-hou/lento-flow.git
 cd lento-flow/frontend
 
 # 安装依赖
