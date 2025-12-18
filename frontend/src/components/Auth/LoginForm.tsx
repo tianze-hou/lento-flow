@@ -12,6 +12,22 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onRegisterClick, onLoginSu
     username: '',
     password: ''
   });
+  
+  const validateForm = () => {
+    // 检查密码长度
+    if (formData.password.length < 6) {
+      setError('密码长度不能少于6个字符');
+      return false;
+    }
+    
+    // 检查密码长度上限（bcrypt限制为72字节）
+    if (formData.password.length > 60) {
+      setError('密码长度不能超过60个字符');
+      return false;
+    }
+    
+    return true;
+  };
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +41,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onRegisterClick, onLoginSu
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+
+    // 表单验证
+    if (!validateForm()) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch('/api/auth/login', {

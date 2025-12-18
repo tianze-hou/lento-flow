@@ -35,6 +35,12 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onLoginClick }) => {
       setError('密码长度不能少于6个字符');
       return false;
     }
+    
+    // 检查密码长度上限（bcrypt限制为72字节）
+    if (formData.password.length > 60) {
+      setError('密码长度不能超过60个字符');
+      return false;
+    }
 
     return true;
   };

@@ -18,11 +18,18 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 # 生成哈希密码
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    # bcrypt 限制密码长度不能超过 72 字节，需要手动截断
+    # 同时编码为 utf-8 以正确计算字节长度
+    password_bytes = password.encode('utf-8')[:72]
+    password_truncated = password_bytes.decode('utf-8', errors='ignore')
+    return pwd_context.hash(password_truncated)
 
 # 验证密码
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    # 与哈希过程保持一致，截断密码到 72 字节
+    password_bytes = plain_password.encode('utf-8')[:72]
+    password_truncated = password_bytes.decode('utf-8', errors='ignore')
+    return pwd_context.verify(password_truncated, hashed_password)
 
 # 创建访问令牌
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
